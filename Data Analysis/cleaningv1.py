@@ -24,6 +24,35 @@ data_cleaned = data.groupby('Country', as_index=False).apply(impute_with_mean).r
 data_cleaned['Status'] = data_cleaned['Status'].map({'Developed': 1, 'Developing': 0})
 data_cleaned = data_cleaned.dropna(subset=['Life expectancy'])  # Drop rows where 'Life expectancy' is NaN
 
+import pandas as pd
+
+# Assuming 'data_cleaned' is your cleaned DataFrame
+# Make sure 'Life expectancy' and other features are of numeric types
+
+# Select only numeric features including 'Life expectancy'
+numeric_features = data_cleaned.select_dtypes(include=['number'])
+
+# Calculate the covariance matrix for numeric features
+covariance_matrix = numeric_features.cov()
+
+# Extract covariance values between 'Life expectancy' and each feature
+# This excludes the covariance of 'Life expectancy' with itself
+life_expectancy_covariance = covariance_matrix['Life expectancy'].drop('Life expectancy')
+cov_df = life_expectancy_covariance.reset_index()
+cov_df.columns = ['Feature', 'Covariance']
+
+# Sort the DataFrame by the absolute values of covariance to make the plot more informative
+cov_df = cov_df.reindex(cov_df.Covariance.abs().sort_values(ascending=False).index)
+
+# Create a bar plot
+plt.figure(figsize=(10, 8))
+sns.barplot(x='Covariance', y='Feature', data=cov_df)
+
+# Add plot labels and title
+plt.xlabel('Covariance with Life Expectancy')
+plt.ylabel('Feature')
+plt.title('Covariance of Features with Life Expectancy')
+
 # Exploratory Data Analysis: Distribution of 'Life expectancy'
 plt.figure(figsize=(10, 6))
 sns.histplot(data_cleaned['Life expectancy'], kde=True, bins=30)
