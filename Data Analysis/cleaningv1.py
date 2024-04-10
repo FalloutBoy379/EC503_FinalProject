@@ -1,86 +1,55 @@
-import csv
+import pandas as pd
+import seaborn as sns
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-import numpy as np
 
-# Specify the path to your CSV file
-csv_file_path = './Life Expectancy Data.csv'
+# Load and clean the dataset
+file_path = './Life Expectancy Data.csv'  # Update to your file path
+data = pd.read_csv(file_path)
+data.columns = data.columns.str.strip()
 
-# Open the CSV file
-with open(csv_file_path, 'r') as file:
-    # Create a CSV reader object
-    csv_reader = csv.reader(file)
-    
-    # Initialize an empty list to store the labels
-    features = []
+# Imputation function to fill missing values with column mean
+def impute_with_mean(df):
+    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
+    for column in numeric_cols:
+        if column != 'Year':
+            df[column] = df[column].fillna(df[column].mean())
+    return df
 
-    # Read the first row of the CSV file
-    header = next(csv_reader)
+# Apply imputation grouped by 'Country'
+data_cleaned = data.groupby('Country', as_index=False).apply(impute_with_mean).reset_index(drop=True)
 
-    # Store the labels in the list
-    features = header
+# Encode 'Status' and handle potential NaNs in 'Life expectancy'
+data_cleaned['Status'] = data_cleaned['Status'].map({'Developed': 1, 'Developing': 0})
+data_cleaned = data_cleaned.dropna(subset=['Life expectancy'])  # Drop rows where 'Life expectancy' is NaN
 
-    # Initialize an empty dictionary to store the countries and their corresponding labels
-    country_labels = {}
+# Exploratory Data Analysis: Distribution of 'Life expectancy'
+plt.figure(figsize=(10, 6))
+sns.histplot(data_cleaned['Life expectancy'], kde=True, bins=30)
+plt.title('Distribution of Life Expectancy')
+plt.show()
 
-    # Read each row of the CSV file
-    for row in csv_reader:
-        # Extract the country from the first column
-        country = row[0]
-        
-        # Add the country to the dictionary if it's not already present
-        if country not in country_labels:
-            # Initialize an empty dictionary to store the labels for each year
-            country_labels[country] = {}
-        
-        # Extract the year from the second column
-        year = row[1]
-        
-        # Extract the labels from the remaining columns
-        labels = row[2:]
-        
-        # Add the labels to the dictionary for the country and year
-        country_labels[country][year] = labels
-    
-    # Print the labels for each country and year
-    print("Country Labels:\n")
-    for country, years in country_labels.items():
-        print(country)
-        for year, labels in years.items():
-            print(year, labels)
-        print()
+# Save the cleaned data
+cleaned_file_path = './Life_Expectancy_Data_Cleaned.csv'  # Update to your desired path
+data_cleaned.to_csv(cleaned_file_path, index=False)
+print(f"Cleaned data exported to {cleaned_file_path}")
 
-        # Calculate the correlation between features for every country
-        for country, years in country_labels.items():
-            print(f"Correlation for {country}:")
-            for year, labels in years.items():
-                # Convert labels to numeric values
-                numeric_labels = []
-                for label in labels:
-                    try:
-                        numeric_labels.append(float(label))
-                    except ValueError:
-                        numeric_labels.append(0.0)  # Replace non-numeric labels with 0.0
-                                
-                # Calculate the correlation matrix
-                correlation_matrix = np.corrcoef(numeric_labels)
-                                
-                # Print the correlation matrix
-                print(f"Year {year}:")
-                print(correlation_matrix)
-                print()
-                     
+# Prepare data for modeling
+X = data_cleaned.drop(['Life expectancy', 'Country'], axis=1)
+y = data_cleaned['Life expectancy']
 
-                # Visualize the correlation matrix
-                plt.imshow(correlation_matrix, cmap='hot', interpolation='nearest')
-                plt.colorbar()
-                plt.title(f"Correlation Matrix for {country} - Year {year}")
-                plt.xlabel("Features")
-                plt.ylabel("Features")
-                # Visualize the correlation matrix
-                if correlation_matrix.shape[0] > 0 and correlation_matrix.shape[1] > 0:
-                    plt.imshow(correlation_matrix, cmap='hot', interpolation='nearest')
-                    plt.colorbar()
-                    plt.title(f"Correlation Matrix for {country} - Year {year}")
-                    plt.xlabel("Features")
-                    plt.ylabel("Features")
-                    plt.show()
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train a Random Forest model
+rf_model = RandomForestRegressor(n_estimators=500, random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Calculate feature importances
+feature_importances = rf_model.feature_importances_
+plt.figure(figsize=(10, 8))
+features = X.columns
+sns.barplot(x=feature_importances, y=features)
+plt.title('Feature Importance')
+plt.show()
