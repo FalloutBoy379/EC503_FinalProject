@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
 # Load and clean the dataset
-file_path = './Life Expectancy Data.csv'  # Update to your file path
+file_path = 'C:/Users/anshm/OneDrive/Desktop/EC503/EC503_FinalProject/Life Expectancy Data.csv'  # Update to your file path
 data = pd.read_csv(file_path)
 data.columns = data.columns.str.strip()
 
