@@ -1,33 +1,31 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.optimize import minimize
 
-def huber_loss(residual, delta=1.35):
-    return np.where(np.abs(residual) < delta, 
-                    0.5 * residual**2, 
-                    delta * (np.abs(residual) - 0.5 * delta))
+def recursive_least_squares(X, y, delta=1.0, lam=0.99):
+    n_samples, n_features = X.shape
+    P = delta * np.eye(n_features)
+    theta = np.zeros(n_features)
+    predictions = np.zeros(n_samples)
 
-def weighted_least_squares(X, y, weights):
-    # Minimize the weighted least squares objective
-    X_w = X * np.sqrt(weights[:, np.newaxis])
-    y_w = y * np.sqrt(weights)
-    beta = np.linalg.lstsq(X_w, y_w, rcond=None)[0]
-    return beta
+    for i in range(n_samples):
+        x_i = X[i, :]
+        y_i = y[i]
+        # Compute the prediction error
+        prediction = x_i.dot(theta)
+        predictions[i] = prediction
+        error = y_i - prediction
+        
+        # Compute the gain vector
+        K = (P @ x_i) / (lam + x_i.T @ P @ x_i)
+        
+        # Update the coefficient vector
+        theta += K * error
+        
+        # Update the inverse covariance matrix
+        P = (P - np.outer(K, x_i.T @ P)) / lam
 
-def robust_regression(X, y, delta=1.35, max_iter=10):
-    n = len(y)
-    weights = np.ones(n)
-    mse_history = []
-
-    for _ in range(max_iter):
-        beta = weighted_least_squares(X, y, weights)
-        residuals = y - X.dot(beta)
-        weights = delta / np.maximum(delta, np.abs(residuals))
-        mse = np.mean(residuals**2)
-        mse_history.append(mse)
-
-    return beta, mse_history, X.dot(beta)
+    return theta, predictions
 
 # Data preparation
 data_path = 'Life_Expectancy_Data_Cleaned.csv'
@@ -42,20 +40,11 @@ y = data_subset["Life expectancy"].values
 # Adding a constant to the matrix X to account for the intercept
 X = np.hstack([np.ones((X.shape[0], 1)), X])
 
-# Run the robust regression
-beta, mse_history, predictions = robust_regression(X, y)
+# Run the Recursive Least Squares
+theta, predictions = recursive_least_squares(X, y)
 
 # Print the estimated coefficients
-print("Intercept and coefficients:", beta)
-
-# Plotting the MSE over iterations
-plt.figure(figsize=(10, 5))
-plt.plot(mse_history, marker='o')
-plt.title('MSE over Iterations')
-plt.xlabel('Iteration')
-plt.ylabel('Mean Squared Error')
-plt.grid(True)
-plt.show()
+print("Intercept and coefficients:", theta)
 
 # Plotting Actual vs Predicted Life Expectancy
 plt.figure(figsize=(10, 5))
