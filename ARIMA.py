@@ -62,7 +62,7 @@ test_years = test_life_expectancy.index.astype(int)
 
 # Plot MSE as a bar graph
 plt.figure()
-plt.bar(test_years, squared_errors, color='skyblue')
+plt.bar(test_years, squared_errors)
 plt.title('Mean Squared Error (MSE) for Life Expectancy Forecast')
 plt.xlabel('Year')
 plt.ylabel('Mean Squared Error')
