@@ -18,10 +18,16 @@ data_cleaned.loc[:, 'Population_std'] = scaler.fit_transform(data_cleaned[['Popu
 
 data_cleaned = pd.get_dummies(data_cleaned, columns=['Status'])
 
-X = data_cleaned.drop(['Life expectancy', 'Country', 'Population', 'Population_std', 'Year'], axis=1)
+X = data_cleaned.drop(['Life expectancy', 'Country', 'Population', 'Population_std', 'Adult Mortality', 'infant deaths'], axis=1)
 y = data_cleaned['Life expectancy']
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Generate a new csv file with the feature columns remaining in X
+# Normalize all the columns
+X_normalized = (X - X.mean()) / X.std()
+X_normalized.to_csv('new_data.csv', index=False)
+y = (y - y.mean()) / y.std()
+
+X_train, X_test, y_train, y_test = train_test_split(X_normalized, y, test_size=0.2, random_state=42)
 
 rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
 rf_model.fit(X_train, y_train)
