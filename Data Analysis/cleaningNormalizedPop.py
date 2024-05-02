@@ -13,12 +13,13 @@ data.columns = data.columns.str.strip()
 
 data_cleaned = data.dropna(subset=['Life expectancy']).copy()
 
-scaler = StandardScaler()
-data_cleaned.loc[:, 'Population_std'] = scaler.fit_transform(data_cleaned[['Population']])
+population = data_cleaned['Population']
+population_std = (population - population.mean()) / population.std()
+data_cleaned['Population'] = population_std
 
 data_cleaned = pd.get_dummies(data_cleaned, columns=['Status'])
 
-X = data_cleaned.drop(['Life expectancy', 'Country', 'Population', 'Population_std', 'Adult Mortality', 'infant deaths'], axis=1)
+X = data_cleaned.drop(['Life expectancy', 'Country'], axis=1)
 y = data_cleaned['Life expectancy']
 
 # Generate a new csv file with the feature columns remaining in X
