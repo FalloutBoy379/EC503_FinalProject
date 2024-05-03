@@ -70,3 +70,6 @@ plt.xlabel('Predicted Life Expectancy')
 plt.ylabel('Residuals')
 plt.title('Residuals of Predictions')
 plt.show()
+
+# Export the cleaned dataset to a CSV file named 'Life_Expectancy_Data_Cleaned.csv'
+data_cleaned.to_csv('C:/Users/anshm/OneDrive/Desktop/EC503/EC503_FinalProject/Life_Expectancy_Data_Cleaned.csv', index=False)
